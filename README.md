@@ -40,13 +40,13 @@
 
 **Setup**
 * set `En_hyst_tot=0` under `GlobalAnalog` to disable TOT hysterese; influences also pedestal
-* set `Calib_2V5=200` (external charge injection amplitude)
+* set `Calib_2V5` (external charge injection amplitude)
 * set `IntCtest=0` (interne charge injection amplitude)
 * set `choice_cinj=0` (deactivate interne charge injection)
 * set `cmd_120p=1` (activate externe charge injection)
 * injected channel is selected by setting `HighRange=1`
-* find a channel where ADC/TOA are in the same BX (adjust `phase_ck`)
+* find a channel where ADC/TOA are in the same BX, ie. high ADC/TOA at `Calib_2V5=4000` (adjust `phase_ck`)
 
 
 **Procedure**
-
+* scan `Calib_2V5` from 500 to >2000 in steps of 100
