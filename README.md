@@ -49,4 +49,5 @@
 
 
 **Procedure**
-* scan `Calib_2V5` from 500 to >2000 in steps of 100
+* scan `Calib_2V5` from 10 to >100 in steps of 10 (better 5); extend range/steps as needed
+* NB: if `Toa_vref` is close (within 10) to the pedestal the turnon should be within `Calib_2V5<100`
