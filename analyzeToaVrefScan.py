@@ -47,8 +47,8 @@ dfs = []
 
 
 for filePath,addParams in autodetectFiles(
-    "/home/mkomm/Analysis/HGCAL/cerntestbeam/2024-08-01_15-43-48_ConvGain4_scan_toa_vref_noinj",
-    {"toa_vref": "[0-9]+_[0-9]+_toa_vref_([0-9]+)_DAQ.root"}
+    "/home/mkomm/Analysis/HGCAL/cerntestbeam/2024-08-01_23-15-10_ConvGain4_toa_aligned_scan_Toa_vref",
+    {"toa_vref": "[0-9]+_[0-9]+_ReferenceVoltage.all.Toa_vref_([0-9]+)_DAQ.root"}
 ):
     df = parsePedestalFile(
         filePath,
@@ -80,6 +80,7 @@ dfToaFired = dfTot[dfTot['toa']>0].groupby(['real_channel','toa_vref','channel',
 for chip in dfTot['chip'].unique():
     for half in dfTot['half'].unique():
         plt.figure(figsize=[8,7],dpi=120)
+        plt.title(f"chip{chip}/half{half}")
         for channel in range(0,36):
             #dfToaFiredSel = dfToaFired[(dfToaFired['chip']==chip)&(dfToaFired['half']==half)&(dfToaFired['channel']==channel)]
             
@@ -88,8 +89,8 @@ for chip in dfTot['chip'].unique():
             plt.hist(dfTotSel['toa_vref'],bins=toa_vref_binning, alpha=0.3, label=f"{channel}")
             
         box = plt.gca().get_position()
-        plt.gca().set_position([box.x0, box.y0, box.width, 0.9*box.height])
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.28),ncols=8)
+        plt.gca().set_position([box.x0, box.y0, box.width, 0.87*box.height])
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.32),ncols=8)
         #plt.tight_layout()
         plt.xlabel("toa_vref")
         plt.ylabel("Counts: toa>0")
