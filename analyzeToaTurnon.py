@@ -41,7 +41,7 @@ print (df)
 for chip in sorted(df['chip'].unique()):
     for half in sorted(df['half'].unique()):
         plt.figure(figsize=[8,7],dpi=120)
-        for channel in range(0,6):#sorted(df['channel'].unique()):
+        for channel in range(30,36):#sorted(df['channel'].unique()):
             dfSel = df[(df['chip']==chip)&(df['half']==half)&(df['channel']==channel)]
             #print (dfSel['Calib_2V5'].values[0])
             plt.plot(dfSel['Calib_2V5'].values[0],dfSel['toa_fired'].values[0],label=str(channel))
@@ -56,6 +56,29 @@ for chip in sorted(df['chip'].unique()):
             os.path.join(
                 basepath,
                 f"chip{chip}_half{half}_toaTurnon.png"
+            )
+        )
+        plt.close()
+        
+        plt.figure(figsize=[8,7],dpi=120)
+        for channel in range(30,36):#sorted(df['channel'].unique()):
+            dfSel = df[(df['chip']==chip)&(df['half']==half)&(df['channel']==channel)]
+            #print (dfSel['Calib_2V5'].values[0])
+            
+            trim_toa = 31+0.5*(dfSel['Calib_2V5'].values[0]-30)
+            
+            plt.plot(trim_toa,dfSel['toa_fired'].values[0],label=str(channel))
+        plt.xlabel("trim_toa")
+        plt.ylabel("Counts: toa>0")
+        #plt.xlim([0,100])
+        plt.grid()
+        box = plt.gca().get_position()
+        plt.gca().set_position([box.x0, box.y0, box.width, 0.9*box.height])
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.28),ncols=8)
+        plt.savefig(
+            os.path.join(
+                basepath,
+                f"chip{chip}_half{half}_trim_toa.png"
             )
         )
         plt.close()
