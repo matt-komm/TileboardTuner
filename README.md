@@ -52,5 +52,5 @@
 * NB: if `Toa_vref` is close (within 10) to the pedestal the turnon should be within `Calib_2V5<100`
 * guesstimate the `trim_toa` shift; eg. `+20 Calib_2V5` per `-10 trim_toa` for ConvGain4
 * guesstimate the `trim_toa` modification such that all channels has the turnon at the same `Calib_2V5`, eg. `Calib_2V5=30`
-
+* after alignment, repeat `Toa_vref` scan; the pikes should be all at the same position
 
