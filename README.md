@@ -22,3 +22,27 @@
 * scan `Inv_vref` from 0 to 1000 in steps of 100
 * the chip runs into saturation for `Inv_vref` values below 200 and above 800 showing nonlinear dependence on pedestal levels
 * target `adc` level should be set above 100, eg. 125 
+
+
+## TOA adjustment: 1. Toa_vref
+
+**Setup**
+* set `En_hyst_tot=0` under `GlobalAnalog` to disable TOT hysterese; influences also pedestal
+* set `trim_toa=32` (middle point)
+
+**Procedure**
+* scan `Toa_vref` from 170 to 270 in steps of 5 (better 2) without injection
+* find minimum setting where TOA is not triggered by pedestals; ie. no `toa` counts above `Toa_vref` threshold
+* NB: the pedestal will fire TOA in a very narrow window in `Toa_vref` (<10 for ConvGain4); if `Toa_vref` is **below or above** pedestal no `toa` will be present
+
+
+## TOA adjustment: 2. trim_toa
+
+**Setup**
+* set `En_hyst_tot=0` under `GlobalAnalog` to disable TOT hysterese; influences also pedestal
+* set `Calib_2V5=200` (external charge injection amplitude)
+* set `IntCtest=0` (interne charge injection amplitude)
+* set `choice_cinj=0` (deactivate interne charge injection)
+* set `cmd_120p=1` (activate externe charge injection)
+
+**Procedure**
