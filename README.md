@@ -47,7 +47,10 @@
 * injected channel is selected by setting `HighRange=1`
 * find a channel where ADC/TOA are in the same BX, ie. high ADC/TOA at `Calib_2V5=4000` (adjust `phase_ck`)
 
-
 **Procedure**
 * scan `Calib_2V5` from 10 to >100 in steps of 10 (better 5); extend range/steps as needed
 * NB: if `Toa_vref` is close (within 10) to the pedestal the turnon should be within `Calib_2V5<100`
+* guesstimate the `trim_toa` shift; eg. `+20 Calib_2V5` per `-10 trim_toa` for ConvGain4
+* guesstimate the `trim_toa` modification such that all channels has the turnon at the same `Calib_2V5`, eg. `Calib_2V5=30`
+
+
