@@ -44,5 +44,9 @@
 * set `IntCtest=0` (interne charge injection amplitude)
 * set `choice_cinj=0` (deactivate interne charge injection)
 * set `cmd_120p=1` (activate externe charge injection)
+* injected channel is selected by setting `HighRange=1`
+* find a channel where ADC/TOA are in the same BX (adjust `phase_ck`)
+
 
 **Procedure**
+

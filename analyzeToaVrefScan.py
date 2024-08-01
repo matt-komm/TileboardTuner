@@ -87,7 +87,9 @@ for chip in dfTot['chip'].unique():
             
             plt.hist(dfTotSel['toa_vref'],bins=toa_vref_binning, alpha=0.3, label=f"{channel}")
             
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),ncols=12)
+        box = plt.gca().get_position()
+        plt.gca().set_position([box.x0, box.y0, box.width, 0.9*box.height])
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.28),ncols=8)
         #plt.tight_layout()
         plt.xlabel("toa_vref")
         plt.ylabel("Counts: toa>0")
