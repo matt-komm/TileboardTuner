@@ -53,7 +53,7 @@
 * guesstimate the `trim_toa` shift; eg. `+20 Calib_2V5` per `-10 trim_toa` for ConvGain4
 * guesstimate the `trim_toa` modification such that all channels has the turnon at the same `Calib_2V5`, eg. `Calib_2V5=30`
 * after alignment, repeat `Toa_vref` scan; the pikes should be all at the same position
-* NB: indirect alignment could also be tried as a first rough pass by doing `Toa_vref` scans for 2 `trim_toa` values to get the `Toa_vref`/`trim_toa` slope; advantages: fast scanning + easy to parse pedestal position
+* NB: indirect alignment could also be tried as a first rough pass by doing `Toa_vref` scans for 2 `trim_toa` values to get the `Toa_vref`/`trim_toa` slope; advantages: fast scanning + easy to parse pedestal position; caveat: the threshold depend nonlinear on `Toa_vref` such that when the pedestals align the S-curves for a `Toa_vref` value above the pedestals might be dispersed
 
 ## TOT adjustment: 1. find max ADC charge
 
