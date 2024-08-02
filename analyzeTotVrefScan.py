@@ -35,7 +35,7 @@ def autodetectFiles(filePath, fileParamPattern):
 def parsePedestalFile(filePath,addParams={}):
     f = uproot.open(filePath)
     tree = f['unpacker_data']['hgcroc']
-    df = tree.arrays(['channel','adc','chip','half','corruption','toa'],library='pd')
+    df = tree.arrays(['channel','adc','chip','half','corruption','toa','tot'],library='pd')
     #print(df.head())
     for k,v in addParams.items():
         df[k] = v
@@ -47,8 +47,8 @@ dfs = []
 
 
 for filePath,addParams in autodetectFiles(
-    "/home/mkomm/Analysis/HGCAL/cerntestbeam/2024-08-02_10-15-41_ConvGain4_toa_aligned_scan_Toa_vref_4",
-    {"toa_vref": "[0-9]+_[0-9]+_ReferenceVoltage.all.Toa_vref_([0-9]+)_DAQ.root"}
+    "/home/mkomm/Analysis/HGCAL/cerntestbeam/2024-08-02_11-24-49_ConvGain4_scan_ch0_Tot_vref",
+    {"tot_vref": "[0-9]+_[0-9]+_ReferenceVoltage.all.Tot_vref_([0-9]+)_DAQ.root"}
 ):
     df = parsePedestalFile(
         filePath,
@@ -60,44 +60,42 @@ dfTot = pd.concat(dfs)
 
 
 dfTot = dfTot[(dfTot['channel']>=0)&(dfTot['corruption']==0)]
+
+#select injected channel
+dfTot = dfTot[(dfTot['channel']==0)]
     
 dfTot['real_channel'] = dfTot['channel'] + dfTot['half']*50 + dfTot['chip']*100
 #print (sorted(dfTot['channel'].unique()))
 
-toa_vref_binning = np.sort(dfTot['toa_vref'].unique())
-toa_vref_binning = 0.5*(toa_vref_binning[1:]+toa_vref_binning[:-1])
-toa_vref_binning = np.concatenate([
-    [2*dfTot['toa_vref'].min()-toa_vref_binning[0]],
-    toa_vref_binning,
-    [toa_vref_binning[-1]+2*dfTot['toa_vref'].max()-2*toa_vref_binning[-1]]
-])
-dfTot['toa_fired']=1*(dfTot['toa']>0)
+
+dfTot['tot_fired']=1*(dfTot['tot']>0)
 
 #dfTot = dfTot[dfTot['toa_vref']>230]
 
-dfToaFired = dfTot[dfTot['toa']>0].groupby(['real_channel','toa_vref','channel','half','chip'],as_index=False ).agg({'toa_fired': 'sum'})
-#print (dfToaFired)
-
+dfTotMean = dfTot.groupby(['real_channel','tot_vref','channel','half','chip'],as_index=False ).agg({'tot': 'mean'})
+print (dfTotMean)
+#sys.exit(1)
 
 
 for chip in dfTot['chip'].unique():
     for half in dfTot['half'].unique():
         plt.figure(figsize=[8,7],dpi=120)
         plt.title(f"chip{chip}/half{half}")
-        for channel in range(0,36):
-            #dfToaFiredSel = dfToaFired[(dfToaFired['chip']==chip)&(dfToaFired['half']==half)&(dfToaFired['channel']==channel)]
+        for channel in [0]:
+            dfTotMeanSel = dfTotMean[(dfTotMean['chip']==chip)&(dfTotMean['half']==half)&(dfTotMean['channel']==channel)]
             
-            dfTotSel = dfTot[(dfTot['chip']==chip)&(dfTot['half']==half)&(dfTot['channel']==channel)&(dfTot['toa']>0)]
+            #dfTotSel = dfTot[(dfTot['chip']==chip)&(dfTot['half']==half)&(dfTot['channel']==channel)&(dfTot['toa']>0)]
             
-            plt.hist(dfTotSel['toa_vref'],bins=toa_vref_binning, alpha=0.3, label=f"{channel}")
+            #plt.hist(dfTotSel['toa_vref'],bins=toa_vref_binning, alpha=0.3, label=f"{channel}")
+            plt.plot(dfTotMeanSel['tot_vref'],dfTotMeanSel['tot'],label=str(channel))
             
         box = plt.gca().get_position()
         plt.gca().set_position([box.x0, box.y0, box.width, 0.87*box.height])
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.32),ncols=8)
         #plt.tight_layout()
-        plt.xlabel("toa_vref")
-        plt.ylabel("Counts: toa>0")
-        plt.savefig(f"chip{chip}_half{half}_toavref.png")
+        plt.xlabel("tot_vref")
+        plt.ylabel("Counts: tot>0")
+        plt.savefig(f"chip{chip}_half{half}_totvref.png")
         plt.close()
             
 

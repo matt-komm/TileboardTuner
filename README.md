@@ -24,7 +24,7 @@
 * target `adc` level should be set above 100, eg. 125 
 
 
-## TOA adjustment: 1. Toa_vref
+## TOA adjustment: 1. Toa_vref scan
 
 **Setup**
 * set `En_hyst_tot=0` under `GlobalAnalog` to disable TOT hysterese; influences also pedestal
@@ -36,7 +36,7 @@
 * NB: the pedestal will fire TOA in a very narrow window in `Toa_vref` (<10 for ConvGain4); if `Toa_vref` is **below or above** pedestal no `toa` will be present
 
 
-## TOA adjustment: 2. trim_toa
+## TOA adjustment: 2. trim_toa scan
 
 **Setup**
 * set `En_hyst_tot=0` under `GlobalAnalog` to disable TOT hysterese; influences also pedestal
@@ -53,4 +53,29 @@
 * guesstimate the `trim_toa` shift; eg. `+20 Calib_2V5` per `-10 trim_toa` for ConvGain4
 * guesstimate the `trim_toa` modification such that all channels has the turnon at the same `Calib_2V5`, eg. `Calib_2V5=30`
 * after alignment, repeat `Toa_vref` scan; the pikes should be all at the same position
+* NB: indirect alignment could also be tried as a first rough pass by doing `Toa_vref` scans for 2 `trim_toa` values to get the `Toa_vref`/`trim_toa` slope; advantages: fast scanning + easy to parse pedestal position
+
+## TOT adjustment: 1. find max ADC charge
+
+**Setup**
+* configure for charge injection into one channel (same as for `trim_toa` scan)
+* set `Tot_vref=1000` to prevent triggering of TOT
+
+**Procedure**
+* start from max charge, ie. `Calib_2V5=4000`, for which `adc` of injected channel will be saturated, ie. `adc>1000`
+* gradually lower injected charge by lowering `Calib_2V5` until `adc` level is at about `adc=900` per half (eg. `600<Calib_2V5<800` for ConvGain4)
+
+
+## TOT adjustment: 2. Tot_vref scan
+
+**Setup**
+* keep injecting optimized charge from step 1. into selected channel
+
+**Procedure**
+* scan `Tot_vref` from 200 to 800 in steps of 5 (better 2)
+* check `Tot_vref` vs mean `tot` in injected channels; should fall exponentially to 0 since low `Tot_vref` results in bigger `tot` due to longer pluse
+* select `Tot_vref` per half where the mean `tot` falls rapidly to 0, ie. the point where the injected charge does not trigger `tot` that corresponds to the selected `adc` level from step 1.
+
+
+
 
