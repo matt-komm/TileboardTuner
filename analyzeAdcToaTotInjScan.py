@@ -6,10 +6,16 @@ import re
 import sys
 import os
 import matplotlib
+import argparse
+import h5py
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 matplotlib.use('agg')
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', '--channel', dest='channel', type=int, required=True)
+args = parser.parse_args()
 
 def autodetectFiles(filePath, fileParamPattern):
     fileParamList = []
@@ -34,6 +40,9 @@ def autodetectFiles(filePath, fileParamPattern):
 
 def parsePedestalFile(filePath,addParams={}):
     f = uproot.open(filePath)
+    stripVer = lambda l: map(lambda x: x.split(';')[0],l)
+    if not ('unpacker_data' in stripVer(f.keys()) and 'hgcroc' in stripVer(f['unpacker_data'].keys())):
+        return None
     tree = f['unpacker_data']['hgcroc']
     df = tree.arrays(['channel','adc','chip','half','corruption','toa','tot'],library='pd')
     #print(df.head())
@@ -44,16 +53,37 @@ def parsePedestalFile(filePath,addParams={}):
 dfs = []
 
 
+scanningFolder = "/home/mkomm/Analysis/HGCAL/cerntestbeam/totcinj"
 
+inputFolder = None
+for basePath in os.listdir(scanningFolder):
+    match = re.search("ConvGain4_scan_ch([0-9]+)_Calib_2V5",basePath)
+    if match:
+        channel = int(match.group(1))
+        if channel==args.channel:
+            inputFolder = os.path.join(scanningFolder,basePath)
+
+if inputFolder is None:
+    print ("No input folder found")
+    sys.exit(1)
+
+
+#inputFolder = "/home/mkomm/Analysis/HGCAL/cerntestbeam/2024-08-01_20-31-18_ConvGain4_scan_Calib_2V5_ch17_newphase"
+    
+print ("Analyzing folder: ",inputFolder)
 
 for filePath,addParams in autodetectFiles(
-    "/home/mkomm/Analysis/HGCAL/cerntestbeam/2024-08-02_18-57-52_ConvGain4_scan_ch4_trim_tot_31_Calib_2V5",
+    inputFolder,
+    #"/home/mkomm/Analysis/HGCAL/cerntestbeam/totcinj/2024-08-02_19-38-19_ConvGain4_scan_ch4_Calib_2V5",
     {"Calib_2V5": "[0-9]+_[0-9]+_ReferenceVoltage.all.Calib_2V5_([0-9]+)_DAQ.root"}
 ):
     df = parsePedestalFile(
         filePath,
         addParams = addParams
     )
+    if df is None:
+        print ("skipping file: ",filePath)
+        continue
     dfs.append(df)
     
 dfTot = pd.concat(dfs)
@@ -62,7 +92,7 @@ dfTot = pd.concat(dfs)
 dfTot = dfTot[(dfTot['channel']>=0)&(dfTot['corruption']==0)]
 
 #select injected channel
-dfTot = dfTot[(dfTot['channel']==4)]
+#dfTot = dfTot[(dfTot['channel']==4)]
     
 dfTot['real_channel'] = dfTot['channel'] + dfTot['half']*50 + dfTot['chip']*100
 #print (sorted(dfTot['channel'].unique()))
@@ -87,25 +117,40 @@ for chip in dfTot['chip'].unique():
     for half in dfTot['half'].unique():
         plt.figure(figsize=[8,7],dpi=120)
         plt.title(f"chip{chip}/half{half}")
-        for channel in [4]:
+        for channel in [args.channel]:
             dfMeanSel = dfMean[(dfMean['chip']==chip)&(dfMean['half']==half)&(dfMean['channel']==channel)]
             dfMeanSel = dfMeanSel.sort_values(by=['Calib_2V5'])
-            #dfTotSel = dfTot[(dfTot['chip']==chip)&(dfTot['half']==half)&(dfTot['channel']==channel)&(dfTot['toa']>0)]
             
-            #plt.hist(dfTotSel['toa_vref'],bins=toa_vref_binning, alpha=0.3, label=f"{channel}")
             plt.plot(dfMeanSel['Calib_2V5'],dfMeanSel['adc'],label="adc"+str(channel))
             plt.plot(dfMeanSel['Calib_2V5'],dfMeanSel['tot'],label="tot"+str(channel))
             plt.plot(dfMeanSel['Calib_2V5'],dfMeanSel['toa'],label="toa"+str(channel))
-        box = plt.gca().get_position()
-        plt.gca().set_position([box.x0, box.y0, box.width, 0.87*box.height])
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.32),ncols=8)
-        #plt.tight_layout()
+            
+            
+            outputFile = h5py.File(
+                os.path.join(
+                    inputFolder,
+                    f"chip{chip}_half{half}_channel{channel}_totcinj.h5"
+                ),
+                'w'
+            )
+            outputFile.create_dataset("Calib_2V5", data=dfMeanSel['Calib_2V5'].to_numpy(), compression="gzip", compression_opts=4)
+            outputFile.create_dataset("adc_mean", data=dfMeanSel['adc'].to_numpy(), compression="gzip", compression_opts=4)
+            outputFile.create_dataset("toa_mean", data=dfMeanSel['toa'].to_numpy(), compression="gzip", compression_opts=4)
+            outputFile.create_dataset("tot_mean", data=dfMeanSel['tot'].to_numpy(), compression="gzip", compression_opts=4)
+            outputFile.close()
+            
+        plt.legend(loc='upper center',ncols=3,bbox_to_anchor=(0.5, 1.13))
         #plt.ylim([0,totToAdcRange(dfMeanSel['tot']).max()*1.1])
-        plt.xlim([400,600])
+        #plt.xlim([400,600])
         plt.grid()
         plt.xlabel("Injected charge: Calib_2V5")
         plt.ylabel("Mean adc/tot")
-        plt.savefig(f"chip{chip}_half{half}_adctoatotinj.png")
+        plt.savefig(
+            os.path.join(
+                inputFolder,
+                f"chip{chip}_half{half}_channel{channel}_totcinj.png"
+            )
+        )
         plt.close()
             
 

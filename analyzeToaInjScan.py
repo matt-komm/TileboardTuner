@@ -118,7 +118,7 @@ for chip in dfTot['chip'].unique():
             outputFile = h5py.File(
                 os.path.join(
                     inputFolder,
-                    f"chip{chip}_half{half}_channel{channel}_toacinj.h5py"
+                    f"chip{chip}_half{half}_channel{channel}_toacinj.h5"
                 ),
                 'w'
             )
