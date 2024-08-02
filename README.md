@@ -75,7 +75,7 @@
 * scan `Tot_vref` from 200 to 800 in steps of 5 (better 2)
 * check `Tot_vref` vs mean `tot` in injected channels; should fall exponentially to 0 since low `Tot_vref` results in bigger `tot` due to longer pluse
 * select `Tot_vref` per half where the mean `tot` falls rapidly to 0, ie. the point where the injected charge does not trigger `tot` that corresponds to the selected `adc` level from step 1.
-
+* repeat for a few other channels and select the minimum `Tot_vref` since some channels might run out of `adc` range earlier
 
 
 

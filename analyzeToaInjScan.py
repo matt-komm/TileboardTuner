@@ -72,8 +72,8 @@ print ("Analyzing folder: ",inputFolder)
 for filePath,addParams in autodetectFiles(
     #"/home/mkomm/Analysis/HGCAL/cerntestbeam/2024-08-01_18-39-58_ConvGain4_scan_Calib_2V5_ch4_newphase_trim_toa_21",
     inputFolder,
-    #{"Calib_2V5": "[0-9]+_[0-9]+_Calib_2V5_([0-9]+)_DAQ.root"}
-    {"Calib_2V5": "[0-9]+_[0-9]+_ReferenceVoltage.all.Calib_2V5_([0-9]+)_DAQ.root"}
+    {"Calib_2V5": "[0-9]+_[0-9]+_Calib_2V5_([0-9]+)_DAQ.root"}
+    #{"Calib_2V5": "[0-9]+_[0-9]+_ReferenceVoltage.all.Calib_2V5_([0-9]+)_DAQ.root"}
     
 ):
     df = parsePedestalFile(
@@ -103,17 +103,17 @@ for chip in dfTot['chip'].unique():
         for channel in [args.channel]:
             #print (chip,half,'='*10)
             dfToaFiredSel = dfToaFired[(dfToaFired['chip']==chip)&(dfToaFired['half']==half)&(dfToaFired['channel']==channel)]
-            #print (dfToaFiredSel)
-            
-            
-            #print(dfToaFiredSel)
+            dfToaFiredSel = dfToaFiredSel.sort_values(by=['Calib_2V5'])
+
             dfTotSel = dfTot[(dfTot['chip']==chip)&(dfTot['half']==half)&(dfTot['channel']==channel)]
-            
+            dfTotSel = dfTotSel.sort_values(by=['Calib_2V5'])
             #plt.hist(dfTotSel['toa_vref'],bins=toa_vref_binning, alpha=0.3, label=f"{channel}")
-            
+            '''
             idxSorted =  np.argsort(dfToaFiredSel['Calib_2V5'].to_numpy())
             cinj = dfToaFiredSel['Calib_2V5'].to_numpy()[idxSorted]
             toa_fired = dfToaFiredSel['toa_fired'].to_numpy()[idxSorted]
+            '''
+            
             
             outputFile = h5py.File(
                 os.path.join(
@@ -122,13 +122,12 @@ for chip in dfTot['chip'].unique():
                 ),
                 'w'
             )
-            outputFile.create_dataset("Calib_2V5", data=cinj, compression="gzip", compression_opts=4)
-            outputFile.create_dataset("toa_fired", data=toa_fired, compression="gzip", compression_opts=4)
+            outputFile.create_dataset("Calib_2V5", data=dfToaFiredSel['Calib_2V5'].to_numpy(), compression="gzip", compression_opts=4)
+            outputFile.create_dataset("toa_fired", data=dfToaFiredSel['toa_fired'].to_numpy(), compression="gzip", compression_opts=4)
             outputFile.close()
             
-            plt.plot(cinj,toa_fired)
+            plt.plot(dfToaFiredSel['Calib_2V5'],dfToaFiredSel['toa_fired'])
             
-            #plt.hist(dfTotSel['Calib_2V5'])
             
         #plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),ncols=12)
         #plt.tight_layout()

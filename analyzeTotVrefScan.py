@@ -47,7 +47,7 @@ dfs = []
 
 
 for filePath,addParams in autodetectFiles(
-    "/home/mkomm/Analysis/HGCAL/cerntestbeam/2024-08-02_11-24-49_ConvGain4_scan_ch0_Tot_vref",
+    "/home/mkomm/Analysis/HGCAL/cerntestbeam/2024-08-02_12-09-04_ConvGain4_scan_ch4_Tot_vref",
     {"tot_vref": "[0-9]+_[0-9]+_ReferenceVoltage.all.Tot_vref_([0-9]+)_DAQ.root"}
 ):
     df = parsePedestalFile(
@@ -62,7 +62,7 @@ dfTot = pd.concat(dfs)
 dfTot = dfTot[(dfTot['channel']>=0)&(dfTot['corruption']==0)]
 
 #select injected channel
-dfTot = dfTot[(dfTot['channel']==0)]
+dfTot = dfTot[(dfTot['channel']==4)]
     
 dfTot['real_channel'] = dfTot['channel'] + dfTot['half']*50 + dfTot['chip']*100
 #print (sorted(dfTot['channel'].unique()))
@@ -81,9 +81,9 @@ for chip in dfTot['chip'].unique():
     for half in dfTot['half'].unique():
         plt.figure(figsize=[8,7],dpi=120)
         plt.title(f"chip{chip}/half{half}")
-        for channel in [0]:
+        for channel in [4]:
             dfTotMeanSel = dfTotMean[(dfTotMean['chip']==chip)&(dfTotMean['half']==half)&(dfTotMean['channel']==channel)]
-            
+            dfTotMeanSel = dfTotMeanSel.sort_values(by=["tot_vref")
             #dfTotSel = dfTot[(dfTot['chip']==chip)&(dfTot['half']==half)&(dfTot['channel']==channel)&(dfTot['toa']>0)]
             
             #plt.hist(dfTotSel['toa_vref'],bins=toa_vref_binning, alpha=0.3, label=f"{channel}")
