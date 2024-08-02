@@ -36,7 +36,7 @@
 * NB: the pedestal will fire TOA in a very narrow window in `Toa_vref` (<10 for ConvGain4); if `Toa_vref` is **below or above** pedestal no `toa` will be present
 
 
-## TOA adjustment: 2. trim_toa scan
+## TOA adjustment: 2. trim_toa
 
 **Setup**
 * set `En_hyst_tot=0` under `GlobalAnalog` to disable TOT hysterese; influences also pedestal
@@ -55,7 +55,7 @@
 * after alignment, repeat `Toa_vref` scan; the pikes should be all at the same position
 * NB: indirect alignment could also be tried as a first rough pass by doing `Toa_vref` scans for 2 `trim_toa` values to get the `Toa_vref`/`trim_toa` slope; advantages: fast scanning + easy to parse pedestal position; caveat: the threshold depend nonlinear on `Toa_vref` such that when the pedestals align the S-curves for a `Toa_vref` value above the pedestals might be dispersed
 
-## TOT adjustment: 1. find max ADC charge
+## TOT adjustment: 1. configuring max ADC threshold
 
 **Setup**
 * configure for charge injection into one channel (same as for `trim_toa` scan)
@@ -75,7 +75,16 @@
 * scan `Tot_vref` from 200 to 800 in steps of 5 (better 2)
 * check `Tot_vref` vs mean `tot` in injected channels; should fall exponentially to 0 since low `Tot_vref` results in bigger `tot` due to longer pluse
 * select `Tot_vref` per half where the mean `tot` falls rapidly to 0, ie. the point where the injected charge does not trigger `tot` that corresponds to the selected `adc` level from step 1.
-* repeat for a few other channels and select the minimum `Tot_vref` since some channels might run out of `adc` range earlier
+* repeat for a few other channels and select the minimum `Tot_vref` since some channels might run out of `adc` range (ie. `>1023`) earlier
+* NB: to plot mean `adc` and mean `tot` on the same scale one can multiply `tot` by 14 and substract an offset of about `7500` (for ConvGain4)
 
+## TOT adjustment: 3. trim_tot
+**Setup**
+* set `trim_tot=31` for all channels
+
+**Procedure**
+* guesstimate the `trim_tot` shift; eg. `+20 Calib_2V5` per `-10 trim_tot` for ConvGain4 (oddly identical to `trim_toa`)
+* scan `Calib_2V5` and find `adc`/`tot` switching point for all channels
+* guesstimate the necessary `trim_tot` shift per channel to have all channels' switching points at the same `Calib_2V5`
 
 
