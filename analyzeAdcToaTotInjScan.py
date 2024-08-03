@@ -52,7 +52,7 @@ def parsePedestalFile(filePath,addParams={}):
    
 dfs = []
 
-
+'''
 scanningFolder = "/home/mkomm/Analysis/HGCAL/cerntestbeam/totcinj"
 
 inputFolder = None
@@ -66,9 +66,9 @@ for basePath in os.listdir(scanningFolder):
 if inputFolder is None:
     print ("No input folder found")
     sys.exit(1)
+'''
 
-
-#inputFolder = "/home/mkomm/Analysis/HGCAL/cerntestbeam/2024-08-01_20-31-18_ConvGain4_scan_Calib_2V5_ch17_newphase"
+inputFolder = "/home/mkomm/Analysis/HGCAL/cerntestbeam/2024-08-02_18-49-39_ConvGain4_scan_ch4_trim_tot_21_Calib_2V5"
     
 print ("Analyzing folder: ",inputFolder)
 
@@ -125,6 +125,11 @@ for chip in dfTot['chip'].unique():
             plt.plot(dfMeanSel['Calib_2V5'],dfMeanSel['tot'],label="tot"+str(channel))
             plt.plot(dfMeanSel['Calib_2V5'],dfMeanSel['toa'],label="toa"+str(channel))
             
+            adcTurnoff = dfMeanSel[dfMeanSel['adc']<10]['Calib_2V5'].min()
+            totTurnon = dfMeanSel[dfMeanSel['tot']<10]['Calib_2V5'].max()
+            
+            midPoint = 0.5*(adcTurnoff+totTurnon)
+            plt.plot([midPoint],[0], marker='v', c='black')
             
             outputFile = h5py.File(
                 os.path.join(
