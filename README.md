@@ -87,4 +87,9 @@
 * scan `Calib_2V5` and find `adc`/`tot` switching point for all channels
 * guesstimate the necessary `trim_tot` shift per channel to have all channels' switching points at the same `Calib_2V5`
 
+## Trigger thresholds
+**Procedure**
+* take pedestal run
+* set `Adc_Pedestal` parameter per channel to median `adc` level per channel
+* set `Adc_TH=10` (noise level of `adc`) and `MultFactor=14` (factor between slopes  of `tot`/`adc` vs `Calib_2V5`)  in `DigitalHalf` 
 
