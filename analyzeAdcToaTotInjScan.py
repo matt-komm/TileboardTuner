@@ -40,6 +40,7 @@ def autodetectFiles(filePath, fileParamPattern):
 
 def parsePedestalFile(filePath,addParams={}):
     f = uproot.open(filePath)
+    print (filePath)
     stripVer = lambda l: map(lambda x: x.split(';')[0],l)
     if not ('unpacker_data' in stripVer(f.keys()) and 'hgcroc' in stripVer(f['unpacker_data'].keys())):
         return None
@@ -52,12 +53,12 @@ def parsePedestalFile(filePath,addParams={}):
    
 dfs = []
 
-'''
-scanningFolder = "/home/mkomm/Analysis/HGCAL/cerntestbeam/totcinj"
+
+scanningFolder = "/home/mkomm/Analysis/HGCAL/cerntestbeam/toatot_aligned_totcinj"
 
 inputFolder = None
 for basePath in os.listdir(scanningFolder):
-    match = re.search("ConvGain4_scan_ch([0-9]+)_Calib_2V5",basePath)
+    match = re.search("ConvGain4_toatot_aligned_scan_ch([0-9]+)_Calib_2V5",basePath)
     if match:
         channel = int(match.group(1))
         if channel==args.channel:
@@ -66,9 +67,9 @@ for basePath in os.listdir(scanningFolder):
 if inputFolder is None:
     print ("No input folder found")
     sys.exit(1)
-'''
 
-inputFolder = "/home/mkomm/Analysis/HGCAL/cerntestbeam/2024-08-02_18-49-39_ConvGain4_scan_ch4_trim_tot_21_Calib_2V5"
+
+#inputFolder = "/home/mkomm/Analysis/HGCAL/cerntestbeam/2024-08-04_10-05-33_ConvGain4_toatot_aligned_scan_ch0_Calib_2V5"
     
 print ("Analyzing folder: ",inputFolder)
 
@@ -100,17 +101,18 @@ dfTot['real_channel'] = dfTot['channel'] + dfTot['half']*50 + dfTot['chip']*100
 
 #dfTot = dfTot[dfTot['toa_vref']>230]
 
-dfMean = dfTot.groupby(['real_channel','Calib_2V5','channel','half','chip'],as_index=False ).agg({'tot': 'mean', 'adc': 'mean', 'toa': 'mean'})
+dfMean = dfTot.groupby(['real_channel','Calib_2V5','channel','half','chip'],as_index=False ).agg({
+    'tot': ['mean', 'median', 'std'], 
+    'adc': ['mean', 'median', 'std'], 
+    'toa': ['mean', 'median', 'std'], 
+})
 
 print (dfMean)
 
 
-#sys.exit(1)
-
-
 def totToAdcRange(tot):
     scale = 14 #from Arnaud
-    offset = 7500 #found this by eye
+    offset = 7100 #found this by eye
     return scale*tot-offset
 
 for chip in dfTot['chip'].unique():
@@ -121,12 +123,12 @@ for chip in dfTot['chip'].unique():
             dfMeanSel = dfMean[(dfMean['chip']==chip)&(dfMean['half']==half)&(dfMean['channel']==channel)]
             dfMeanSel = dfMeanSel.sort_values(by=['Calib_2V5'])
             
-            plt.plot(dfMeanSel['Calib_2V5'],dfMeanSel['adc'],label="adc"+str(channel))
-            plt.plot(dfMeanSel['Calib_2V5'],dfMeanSel['tot'],label="tot"+str(channel))
-            plt.plot(dfMeanSel['Calib_2V5'],dfMeanSel['toa'],label="toa"+str(channel))
+            plt.plot(dfMeanSel['Calib_2V5'],dfMeanSel['adc']['mean'],label="adc"+str(channel))
+            plt.plot(dfMeanSel['Calib_2V5'],totToAdcRange(dfMeanSel['tot']['mean']),label="tot"+str(channel))
+            plt.plot(dfMeanSel['Calib_2V5'],dfMeanSel['toa']['mean'],label="toa"+str(channel))
             
-            adcTurnoff = dfMeanSel[dfMeanSel['adc']<10]['Calib_2V5'].min()
-            totTurnon = dfMeanSel[dfMeanSel['tot']<10]['Calib_2V5'].max()
+            adcTurnoff = dfMeanSel[dfMeanSel['adc']['mean']<10]['Calib_2V5'].min()
+            totTurnon = dfMeanSel[dfMeanSel['tot']['mean']<10]['Calib_2V5'].max()
             
             midPoint = 0.5*(adcTurnoff+totTurnon)
             plt.plot([midPoint],[0], marker='v', c='black')
@@ -139,13 +141,13 @@ for chip in dfTot['chip'].unique():
                 'w'
             )
             outputFile.create_dataset("Calib_2V5", data=dfMeanSel['Calib_2V5'].to_numpy(), compression="gzip", compression_opts=4)
-            outputFile.create_dataset("adc_mean", data=dfMeanSel['adc'].to_numpy(), compression="gzip", compression_opts=4)
-            outputFile.create_dataset("toa_mean", data=dfMeanSel['toa'].to_numpy(), compression="gzip", compression_opts=4)
-            outputFile.create_dataset("tot_mean", data=dfMeanSel['tot'].to_numpy(), compression="gzip", compression_opts=4)
+            for quantity in ['adc','tot','toa']:
+                for fieldName in dfMeanSel[quantity].columns:
+                    outputFile.create_dataset(quantity+"_"+fieldName, data=dfMeanSel['adc'].to_numpy(), compression="gzip", compression_opts=4)
             outputFile.close()
             
         plt.legend(loc='upper center',ncols=3,bbox_to_anchor=(0.5, 1.13))
-        #plt.ylim([0,totToAdcRange(dfMeanSel['tot']).max()*1.1])
+        plt.ylim([0,totToAdcRange(dfMeanSel['tot']['mean']).max()*1.1])
         #plt.xlim([400,600])
         plt.grid()
         plt.xlabel("Injected charge: Calib_2V5")
