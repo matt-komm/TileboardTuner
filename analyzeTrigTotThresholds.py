@@ -7,6 +7,7 @@ import sys
 import os
 import matplotlib
 import h5py
+import math
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
@@ -15,7 +16,7 @@ matplotlib.use('agg')
 
 def fitAdc(calib_2V5, adc, unc=2.):
     #select fit range
-    adcSel = (adc>200)&(adc<1000)
+    adcSel = (adc>200)&(adc<1000)&(calib_2V5>0)
     
     adc = adc[adcSel]
     calib_2V5 = calib_2V5[adcSel]
@@ -25,42 +26,61 @@ def fitAdc(calib_2V5, adc, unc=2.):
         else:
             unc = np.ones_like(adc)*unc
         
+        posUncSel = unc>0.01
+        adc = adc[posUncSel]
+        calib_2V5 = calib_2V5[posUncSel]
+        unc = unc[posUncSel]
     
     params,cov = curve_fit(
         lambda x,a,b: a*x+b, 
         calib_2V5, adc, p0=[1,0], 
         sigma=unc, absolute_sigma=True, 
         check_finite=True, 
+        bounds=[(0,0),(np.inf,np.inf)] #force positive slope & offset
     )
-
-    print (params,cov)
+    
+    return {
+        "slope": params[0],
+        "offset": params[1],
+        "slope_unc": math.sqrt(cov[0,0]),
+        "offset_unc": math.sqrt(cov[1,1])
+    }
     
 def fitTot(calib_2V5, tot, unc=5.):
     #select fit range
-    totSel = (calib_2V5>2900)
+    totSel = (calib_2V5>2700)
     
     tot = tot[totSel]
     calib_2V5 = calib_2V5[totSel]
+    
     if unc is not None:
         if hasattr(unc, '__len__'):
             unc = unc[totSel]
         else:
             unc = np.ones_like(tot)*unc
+        posUncSel = unc>0.01
+        tot = tot[posUncSel]
+        calib_2V5 = calib_2V5[posUncSel]
+        unc = unc[posUncSel]
         
-    
     params,cov = curve_fit(
         lambda x,a,b: a*x+b, 
         calib_2V5, tot, p0=[0.1,0], 
         sigma=unc, absolute_sigma=True, 
         check_finite=True, 
+        bounds=[(0,0),(np.inf,np.inf)] #force positive slope & offset
     )
 
-    print (params,cov)
-
+    return {
+        "slope": params[0],
+        "offset": params[1],
+        "slope_unc": math.sqrt(cov[0,0]),
+        "offset_unc": math.sqrt(cov[1,1])
+    }
 
 basepath = "/home/mkomm/Analysis/HGCAL/cerntestbeam/toatot_aligned_totcinj"
 
-dfMean = pd.DataFrame(columns=["chip","half","channel","Calib_2V5","adc_mean","toa_mean","tot_mean"])    
+dfMean = None 
 
 for folder in os.listdir(basepath):
     if not os.path.isdir(os.path.join(basepath,folder)):
@@ -76,17 +96,20 @@ for folder in os.listdir(basepath):
             channel = int(match.group(3))
             
             inputFile = h5py.File(os.path.join(basepath,folder,f),"r")
-            Calib_2V5 = inputFile["Calib_2V5"][:]
-            adc_mean = inputFile["adc_mean"][:]
-            toa_mean = inputFile["toa_mean"][:]
-            tot_mean = inputFile["tot_mean"][:]
-            dfMean.loc[len(dfMean)]={
-                "chip": chip, "half": half, "channel": channel,
-                "Calib_2V5": Calib_2V5, 
-                "adc_mean": adc_mean,
-                "toa_mean": toa_mean,
-                "tot_mean": tot_mean,
-            }
+
+            fieldNames = list(inputFile.keys())
+            if dfMean is None:
+                dfMean = pd.DataFrame(columns=['chip','half','channel']+fieldNames)
+           
+            data = {'chip': chip, 'half': half, 'channel': channel}
+            for fieldName in fieldNames:
+                data[fieldName] = inputFile[fieldName][:]
+
+            dfMean.loc[len(dfMean)]=data
+
+            
+#print (dfMean.columns)
+            
 #print (
 #(df['tot_mean'].values>700).any()
 #print (df['channel'].unique())
@@ -107,8 +130,11 @@ for chip in sorted(dfMean['chip'].unique()):
             
             calib_2V5 = dfMeanSel['Calib_2V5'].values[0]
             adc_mean = dfMeanSel['adc_mean'].values[0]
+            adc_std = dfMeanSel['adc_std'].values[0]
             tot_mean = dfMeanSel['tot_mean'].values[0]
+            tot_std = dfMeanSel['tot_std'].values[0]
             
+            '''
             adcTurnoff = dfMeanSel['Calib_2V5'].values[0][dfMeanSel['adc_mean'].values[0]<10]
             totTurnon = dfMeanSel['Calib_2V5'].values[0][dfMeanSel['tot_mean'].values[0]<10]
             if len(adcTurnoff)>0 and len(totTurnon)>0:
@@ -122,23 +148,36 @@ for chip in sorted(dfMean['chip'].unique()):
             else:
                 midPoint = dfSel['Calib_2V5'].values[0].min()
                 print (f"WARNING: no crossing for {chip}/{half}/{channel}")
-            
+            '''
             #plt.plot([midPoint],[0], marker='v', c='black')
+           
+            #print (calib_2V5)
+            #print (adc_mean)
+            #print (adc_std)
             
-            fitAdc(calib_2V5,adc_mean)
-            fitTot(calib_2V5,tot_mean)
+            adcFitResult = fitAdc(calib_2V5, adc_mean, adc_std)
+            totFitResult = fitTot(calib_2V5, tot_mean, tot_std)
+
+            multiFactor = adcFitResult['slope']/totFitResult['slope']
+            tot_Pn = totFitResult['offset']
             
-            plt.plot(calib_2V5,adc_mean)   
-            #plt.plot(calib_2V5,tot_mean)
+            
+            #TODO: finite difference between fitted curves originates from 
+            #neglecting the adc offset
+            plt.plot(calib_2V5,adc_mean)
+            plt.plot(calib_2V5,calib_2V5*adcFitResult['slope']+adcFitResult['offset'],linestyle='--')
+            plt.plot(calib_2V5,multiFactor*(tot_mean-tot_Pn))
+            plt.plot(calib_2V5,multiFactor*(calib_2V5*totFitResult['slope']),linestyle='--')
             
             plt.grid()
+            plt.ylim([0,1.2*multiFactor*(calib_2V5.max()*totFitResult['slope'])])
             plt.xlabel("Injected charge: Calib_2V5")
             plt.ylabel("Mean adc/tot")
             plt.savefig(
                 f"chip{chip}_half{half}_channel{channel}_trigTotThres.png"
             )
             plt.close()
-            sys.exit(1)
+            #sys.exit(1)
             #dfTot
             #calib_2V5 = 
             

@@ -107,21 +107,21 @@ dfMean = dfTot.groupby(['real_channel','Calib_2V5','channel','half','chip'],as_i
     'toa': ['mean', 'median', 'std'], 
 })
 
-print (dfMean)
-
-
 def totToAdcRange(tot):
     scale = 14 #from Arnaud
     offset = 7100 #found this by eye
     return scale*tot-offset
 
-for chip in dfTot['chip'].unique():
-    for half in dfTot['half'].unique():
+for chip in sorted(dfTot['chip'].unique()):
+    for half in sorted(dfTot['half'].unique()):
         plt.figure(figsize=[8,7],dpi=120)
         plt.title(f"chip{chip}/half{half}")
         for channel in [args.channel]:
+            print (chip,half,channel)
             dfMeanSel = dfMean[(dfMean['chip']==chip)&(dfMean['half']==half)&(dfMean['channel']==channel)]
             dfMeanSel = dfMeanSel.sort_values(by=['Calib_2V5'])
+            
+            #print(dfMeanSel['adc']['std'])
             
             plt.plot(dfMeanSel['Calib_2V5'],dfMeanSel['adc']['mean'],label="adc"+str(channel))
             plt.plot(dfMeanSel['Calib_2V5'],totToAdcRange(dfMeanSel['tot']['mean']),label="tot"+str(channel))
@@ -133,6 +133,7 @@ for chip in dfTot['chip'].unique():
             midPoint = 0.5*(adcTurnoff+totTurnon)
             plt.plot([midPoint],[0], marker='v', c='black')
             
+            
             outputFile = h5py.File(
                 os.path.join(
                     inputFolder,
@@ -141,9 +142,14 @@ for chip in dfTot['chip'].unique():
                 'w'
             )
             outputFile.create_dataset("Calib_2V5", data=dfMeanSel['Calib_2V5'].to_numpy(), compression="gzip", compression_opts=4)
+            #outputFile.create_dataset("chip", data=np.array(chip,dtype=np.int32),dtype='i4')
+            #outputFile.create_dataset("half", data=np.array(half,dtype=np.int32),dtype='i4')
+            #outputFile.create_dataset("channel", data=np.array(channel,dtype=np.int32),dtype='i4')
             for quantity in ['adc','tot','toa']:
                 for fieldName in dfMeanSel[quantity].columns:
-                    outputFile.create_dataset(quantity+"_"+fieldName, data=dfMeanSel['adc'].to_numpy(), compression="gzip", compression_opts=4)
+                    print (quantity,fieldName,dfMeanSel[quantity][fieldName].to_numpy().shape)
+                    outputFile.create_dataset(quantity+"_"+fieldName, data=dfMeanSel[quantity][fieldName].to_numpy(), compression="gzip", compression_opts=4)
+            
             outputFile.close()
             
         plt.legend(loc='upper center',ncols=3,bbox_to_anchor=(0.5, 1.13))
