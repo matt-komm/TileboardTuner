@@ -96,7 +96,7 @@
 ## Trigger TOT thresholds
 **Procedure**
 * perform charge injection for fully calibrated channels, ie. proper values for `trim_inv`, `Toa_vref`, `trim_toa`, `Tot_vref` `trim_tot`, `Adc_Pedestal` have been set
-* per channel perform a linear fit of mean `adc` vs `Calib_2V5` and mean `tot` vs `Calib_2V5`; use only eg. `Calib_2V5>2900` to fit mean `tot` since it can be highly nonlinear at smaller values
+* per channel perform a linear fit of mean `adc` vs `Calib_2V5` and mean `tot` vs `Calib_2V5`; use only eg. `Calib_2V5>2900` to fit mean `tot` since it can be highly nonlinear at smaller values; restrict the fits to have positive slopes and offsets; one can use a fixed uncertainty or use the standard deviation as uncertainty
 
 
 

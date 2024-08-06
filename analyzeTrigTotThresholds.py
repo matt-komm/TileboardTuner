@@ -164,15 +164,18 @@ for chip in sorted(dfMean['chip'].unique()):
             
             #TODO: finite difference between fitted curves originates from 
             #neglecting the adc offset
-            plt.plot(calib_2V5,adc_mean)
-            plt.plot(calib_2V5,calib_2V5*adcFitResult['slope']+adcFitResult['offset'],linestyle='--')
-            plt.plot(calib_2V5,multiFactor*(tot_mean-tot_Pn))
-            plt.plot(calib_2V5,multiFactor*(calib_2V5*totFitResult['slope']),linestyle='--')
+            plt.plot(calib_2V5,adc_mean,c='royalblue',label='Mean ADC')
+            #plt.plot(calib_2V5,calib_2V5*adcFitResult['slope']+adcFitResult['offset'],linestyle='--',c='blue')
+            plt.plot(calib_2V5,multiFactor*(tot_mean-tot_Pn)+adcFitResult['offset'],c='orange',label='Mean TOT')
+            plt.plot(calib_2V5,dfMeanSel['toa_mean'].values[0]*5,c='green',label="Mean TOA (x5)")
+            
+            plt.plot(calib_2V5,multiFactor*(calib_2V5*totFitResult['slope'])+adcFitResult['offset'],linestyle=':',linewidth=3,c='black', label="Linear fit")
             
             plt.grid()
-            plt.ylim([0,1.2*multiFactor*(calib_2V5.max()*totFitResult['slope'])])
+            plt.legend()
+            plt.ylim([0,1.05*multiFactor*(calib_2V5.max()*totFitResult['slope'])])
             plt.xlabel("Injected charge: Calib_2V5")
-            plt.ylabel("Mean adc/tot")
+            plt.ylabel("Mean ADC/TOT/TOA")
             plt.savefig(
                 f"chip{chip}_half{half}_channel{channel}_trigTotThres.png"
             )
